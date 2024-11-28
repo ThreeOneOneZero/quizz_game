@@ -29,7 +29,12 @@ class UserService {
   }
 
   getCurrentUser(): User | null {
-    return this.currentUser;
+    const storedUser = localStorage.getItem("user");
+    console.log("Current user from localStorage", storedUser);
+    if (storedUser) {
+      return JSON.parse(storedUser);
+    }
+    return null;
   }
 
   getUserRole() {
@@ -44,6 +49,23 @@ class UserService {
   isAuthorized(requiredRole: Role): boolean {
     return this.currentUser ? this.currentUser.role === requiredRole : false;
   }
-}
 
-export default new UserService();
+  async getAllStudents(): Promise<User[]> {
+    // TODO BACK
+    return [
+      {
+        id: 1,
+        name: "Alice",
+        email: "",
+        role: Role.Student,
+      },
+      { id: 2, name: "Bob", email: "", role: Role.Student },
+      { id: 3, name: "Charlie", email: "", role: Role.Student },
+      { id: 4, name: "Caraca", email: "", role: Role.Student },
+      { id: 5, name: "Xilapada", email: "", role: Role.Student },
+      { id: 6, name: "Mae", email: "", role: Role.Student },
+    ];
+  }
+}
+const UserServiceInstance = new UserService();
+export default UserServiceInstance;

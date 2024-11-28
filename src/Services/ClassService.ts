@@ -1,15 +1,26 @@
-import { Class } from '../models/Class';
+import { type Class } from "../models/Class";
+import { User } from "../models/User";
 
-class ClassService {
-  private classes: Class[] = [];
-
-  getClassesByProfessor(authorId: number): Class[] {
-    return this.classes.filter((classes) => classes.authorId === authorId);
+export class ClassService {
+  static async createClass(newClass: Class): Promise<void> {
+    // TODO BACK
+    console.log("Creating class:", newClass);
   }
 
-  addClass(newClass: Class) {
-    this.classes.push(newClass);
+  static async getQuizzesByClassId(classId: number): Promise<any[]> {
+    // TODO BACK - QUIZZ SERVICE
+    return [];
+  }
+
+  static async getClassesByAuthorId(authorId?: User): Promise<Class[]> {
+    // TODO BACK
+    if (!authorId) return [];
+    return [];
+  }
+
+  static async getClassesByUserId(userId?: User): Promise<Class[]> {
+    // TODO BACK
+    if (!userId) return [];
+    return [];
   }
 }
-
-export default new ClassService();

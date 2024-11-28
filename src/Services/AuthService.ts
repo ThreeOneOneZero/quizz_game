@@ -1,39 +1,73 @@
+import { jwtDecode } from "jwt-decode";
 import apiClient from "../Utils/api";
+import { Role } from "../types/Role";
 import UserService from "./UserService";
-import { localUsers } from "../data/users";
-import { User } from "../models/User";
 
+interface DecodedToken {
+  id: string;
+  nome: string;
+  tipo: Role;
+  iat?: number;
+  exp?: number;
+}
 class AuthService {
   static async login(email: string, password: string): Promise<boolean> {
     try {
-      const response = await apiClient.post("/login", { email, password });
+      const response = await apiClient.post("/auth/login", {
+        email,
+        senha: password,
+      });
 
-      const { token, user } = response.data;
+      const { token } = response.data;
       localStorage.setItem("token", token);
-      UserService.setUser(user);
-      //To do: test when the user is not found
+      const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
+      console.log(UserService.getCurrentUser());
+      UserService.setUser({
+        id: Number(decoded.id),
+        email: "",
+        name: decoded.nome,
+        role: decoded.tipo,
+      });
+
       return true;
     } catch (error) {
-      console.error("User not found:", error);
+      console.error("Login failed:", error);
+      return false;
+    }
+  }
+
+  static async register(
+    email: string,
+    password: string,
+    name: string,
+    role: Role
+  ): Promise<boolean> {
+    try {
+      const response = await apiClient.post("/auth/register", {
+        email,
+        senha: password,
+        nome: name,
+        tipo: role,
+      });
+
+      return response.status === 201;
+    } catch (error) {
+      console.error("Registration failed:", error);
       return false;
     }
   }
 
   static logout() {
+    localStorage.removeItem("token");
     UserService.clearUser();
   }
 
   static isAuthenticated(): boolean {
-    const user = UserService.getCurrentUser();
-    return !!user;
+    return !!localStorage.getItem("token");
   }
 
-  //To do: remove after back implementation
-  static getLocalUser(email: string, password: string): User | null {
-    const user = localUsers.find(
-      (user: User) => user.email === email && user.password === password
-    );
-    return user || null;
+  static getToken(): string | null {
+    return localStorage.getItem("token");
   }
 }
 

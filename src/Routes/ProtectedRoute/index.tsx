@@ -2,7 +2,7 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import AuthService from "../../Services/AuthService";
 import UserService from "../../Services/UserService";
-import useToast from "../../hooks";
+import useToast from "../../hooks/toast";
 import { Role } from "../../types/Role";
 
 /**
@@ -20,12 +20,10 @@ const ProtectedRoute = ({
   const user = UserService.getCurrentUser();
   const showToast = useToast();
 
-  // Verifica se o usuário está logado
   if (!AuthService.isAuthenticated()) {
     return <Navigate to="/login" />;
   }
 
-  // Verifica se o usuário tem a role permitida
   if (roles.length > 0 && !roles.includes(user?.role as Role)) {
     showToast("Você não tem permissão para acessar essa página.", "error");
     return <Navigate to="/unauthorized" />;

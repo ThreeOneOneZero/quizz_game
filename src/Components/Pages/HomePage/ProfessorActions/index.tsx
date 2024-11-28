@@ -1,12 +1,7 @@
 import { Button, Typography } from "@mui/material";
-import {
-  Forum,
-  Group,
-  LiveHelp,
-  ManageAccounts,
-  Summarize,
-} from "@mui/icons-material";
+import { Forum, Group, LiveHelp, ManageAccounts } from "@mui/icons-material";
 import UserService from "../../../../Services/UserService";
+import { useNavigate } from "react-router-dom";
 
 interface ProfessorHomeActionsProps {
   loading: boolean;
@@ -18,6 +13,7 @@ const ProfessorHomeActions: React.FC<ProfessorHomeActionsProps> = ({
   setLoading,
 }) => {
   const user = UserService.getCurrentUser();
+  const navigate = useNavigate();
   return (
     <>
       <Typography
@@ -36,7 +32,7 @@ const ProfessorHomeActions: React.FC<ProfessorHomeActionsProps> = ({
           textAlign: "center",
         }}
       >
-        {`Olá, ${user?.role} ${user?.name} aaaaaaaaaaa aaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`}
+        {`Olá, ${user?.role} ${user?.name}`}
       </Typography>
 
       <Button
@@ -74,27 +70,13 @@ const ProfessorHomeActions: React.FC<ProfessorHomeActionsProps> = ({
             marginLeft: 1,
           },
         }}
-      >
-        Criar Pergunta
-      </Button>
-      <Button
-        fullWidth
-        disabled={loading}
-        startIcon={<ManageAccounts />}
-        sx={{
-          background: "var(--quaternary-color)",
-          fontWeight: "bold",
-          marginTop: 2,
-          position: "relative",
-          ":hover": { background: "var(--quaternary-weaker-color)" },
-          ".MuiButton-startIcon": {
-            position: "absolute",
-            left: 8,
-            marginLeft: 1,
-          },
+        onClick={() => {
+          setLoading(true);
+          navigate("/question/create");
+          setLoading(false);
         }}
       >
-        Gerenciar Alunos
+        Criar Pergunta
       </Button>
       <Button
         fullWidth
@@ -112,6 +94,11 @@ const ProfessorHomeActions: React.FC<ProfessorHomeActionsProps> = ({
             marginLeft: 1,
           },
         }}
+        onClick={() => {
+          setLoading(true);
+          navigate("/class/create");
+          setLoading(false);
+        }}
       >
         Criar Turma
       </Button>
@@ -119,7 +106,7 @@ const ProfessorHomeActions: React.FC<ProfessorHomeActionsProps> = ({
       <Button
         fullWidth
         disabled={loading}
-        startIcon={<Summarize />}
+        startIcon={<ManageAccounts />}
         sx={{
           background: "var(--tertiary-color)",
           fontWeight: "bold",
@@ -132,8 +119,13 @@ const ProfessorHomeActions: React.FC<ProfessorHomeActionsProps> = ({
             marginLeft: 1,
           },
         }}
+        onClick={() => {
+          setLoading(true);
+          navigate("/manage/class");
+          setLoading(false);
+        }}
       >
-        Ver Desempenho
+        Gerenciar Turma(s)
       </Button>
     </>
   );

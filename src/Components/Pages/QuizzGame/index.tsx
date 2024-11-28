@@ -1,9 +1,7 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
-  IconButton,
   Button,
   FormControl,
   RadioGroup,
@@ -11,332 +9,204 @@ import {
   Radio,
   Fade,
   CircularProgress,
+  IconButton,
 } from "@mui/material";
-import { ArrowBack, ArrowForward } from "@mui/icons-material";
-import QuizzService from "../../../Services/QuizzService";
-import { Question } from "../../../models/Question";
+import { ArrowBack } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { Question, UserAnswer } from "../../../models/Question";
+import { QuestionService } from "../../../Services/QuestionService";
 
-const QuizzGame: React.FC = () => {
+const QuizzGame = () => {
   const navigate = useNavigate();
-  const [submitting, setSubmitting] = useState(false);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const quizzes = QuizzService.getAllQuizzes();
-    const selectedQuizz = quizzes[Math.floor(Math.random() * quizzes.length)];
-    setQuestions(selectedQuizz.questions);
+    loadQuestions();
   }, []);
 
-  const totalQuestions = questions.length;
+  const loadQuestions = async () => {
+    try {
+      const loadedQuestions = await QuestionService.getQuestions();
+      setQuestions(loadedQuestions);
+    } catch (error) {
+      console.error("Error loading questions:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnswer = (questionId: number, selectedOptionId: number) => {
+    setUserAnswers((prev) => {
+      const existing = prev.find((a) => a.questionId === questionId);
+      if (existing) {
+        return prev.map((a) =>
+          a.questionId === questionId ? { questionId, selectedOptionId } : a
+        );
+      }
+      return [...prev, { questionId, selectedOptionId }];
+    });
+  };
+
   const currentQuestion = questions[currentQuestionIndex];
-  const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
-
-  const handleAnswerChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const updatedQuestions = [...questions];
-      updatedQuestions[currentQuestionIndex].userAnswer = Number(
-        event.target.value
-      );
-      setQuestions(updatedQuestions);
-    },
-    [currentQuestionIndex, questions]
+  const currentAnswer = userAnswers.find(
+    (a) => a.questionId === currentQuestion?.id
   );
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
-  const resetQuizz = useCallback(() => {
-    // not working properly
-    setQuestions((prevQuestions) =>
-      prevQuestions.map((question) => ({
-        ...question,
-        userAnswer: undefined,
-      }))
-    );
-    setCurrentQuestionIndex(0);
-  }, []);
+  const handleNavigation = (direction: "prev" | "next") => {
+    if (direction === "prev" && currentQuestionIndex > 0) {
+      setCurrentQuestionIndex((prev) => prev - 1);
+    } else if (direction === "next" && !isLastQuestion) {
+      setCurrentQuestionIndex((prev) => prev + 1);
+    }
+  };
 
-  const submitQuizz = useCallback(async () => {
+  const handleSubmit = async () => {
+    if (userAnswers.length !== questions.length) return;
+
     setSubmitting(true);
     try {
-      console.log("Respostas enviadas:", questions);
-      // To do: Send answers to the server and show results
-      await resetQuizz();
+      // TODO LOGIC
+      console.log("Submitting answers:", userAnswers);
     } catch (error) {
-      console.error("Erro ao enviar respostas:", error);
+      console.error("Error submitting answers:", error);
     } finally {
       setSubmitting(false);
     }
-  }, [questions, resetQuizz]);
+  };
 
-  const handleNavigation = useCallback(
-    (direction: "prev" | "next") => {
-      if (direction === "prev" && currentQuestionIndex > 0) {
-        setCurrentQuestionIndex((prev) => prev - 1);
-      } else if (
-        direction === "next" &&
-        currentQuestionIndex < totalQuestions - 1
-      ) {
-        setCurrentQuestionIndex((prev) => prev + 1);
-      }
-    },
-    [currentQuestionIndex, totalQuestions]
-  );
-
-  const handleExit = useCallback(async () => {
-    const hasAnswers = questions.some((q) => q.userAnswer !== undefined);
-
-    if (hasAnswers) {
-      const confirmed = window.confirm(
-        "Tem certeza que deseja sair? Todo o progresso será perdido."
-      );
-      if (!confirmed) return;
-    }
-
-    await resetQuizz();
-    navigate("/");
-  }, [questions, resetQuizz, navigate]);
-
-  useEffect(() => {
-    return () => {
-      resetQuizz();
-    };
-  }, [resetQuizz]);
-
-  if (questions.length === 0) {
+  if (loading) {
     return (
-      <Box
-        sx={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: 15,
-          mt: 15,
-          mb: 15,
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
         <CircularProgress sx={{ color: "var(--text-color)" }} />
       </Box>
     );
   }
 
   return (
-    <Box
-      sx={{
-        width: "100%",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        paddingLeft: { xs: 2, sm: 7 },
-        paddingRight: { xs: 2, sm: 7 },
-      }}
-    >
-      <Box
-        sx={{
-          width: "100%",
-        }}
-      >
-        {/* Progresso */}
+    <Fade in timeout={800}>
+      <Box sx={{ maxWidth: 800, mx: "auto", p: 3 }}>
+        {/* Progress bar */}
         <Box
           sx={{
             width: "100%",
             height: "4px",
             bgcolor: "var(--dark-blue-color)",
-            borderRadius: "2px",
             mb: 3,
+            borderRadius: "2px",
+            overflow: "hidden",
           }}
         >
           <Box
             sx={{
-              width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`,
+              width: `${
+                ((currentQuestionIndex + 1) / questions.length) * 100
+              }%`,
               height: "100%",
               bgcolor: "var(--primary-color)",
-              borderRadius: "2px",
               transition: "width 0.3s ease-in-out",
             }}
           />
         </Box>
 
-        {/* Header com navegação */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 4,
-          }}
-        >
+        <Box sx={{ display: "flex", alignItems: "center", mb: 4 }}>
           <IconButton
-            onClick={() => handleNavigation("prev")}
-            disabled={currentQuestionIndex === 0}
-            sx={{
-              color: "var(--text-weak-color)",
-              "&:hover": {
-                color: "var(--text-color)",
-              },
-              "&.Mui-disabled": {
-                color: "transparent",
-              },
-            }}
-            aria-label="Pergunta anterior"
+            onClick={() => navigate(-1)}
+            sx={{ color: "var(--text-weak-color)" }}
           >
             <ArrowBack />
           </IconButton>
-          <Typography
-            variant="h6"
-            component="h1"
-            sx={{ color: "var(--text-color)" }}
-          >
-            {`Pergunta ${currentQuestionIndex + 1} de ${totalQuestions}`}
+          <Typography variant="h5" sx={{ ml: 2, color: "var(--text-color)" }}>
+            Question {currentQuestionIndex + 1} of {questions.length}
           </Typography>
-          <IconButton
-            onClick={() => handleNavigation("next")}
-            disabled={submitting || currentQuestionIndex + 1 === totalQuestions}
-            sx={{
-              color: "var(--text-weak-color)",
-              "&:hover": {
-                color: "var(--text-color)",
-              },
-              "&.Mui-disabled": {
-                color: "transparent",
-              },
-            }}
-            aria-label={isLastQuestion ? "Finalizar quiz" : "Próxima pergunta"}
-          >
-            <ArrowForward />
-          </IconButton>
         </Box>
 
-        {/* Questão atual com animação */}
-        <Fade in={true} key={currentQuestionIndex}>
-          <Box>
-            <Typography
-              variant="h6"
-              component="h2"
-              sx={{
-                color: "var(--text-color)",
-                mb: 3,
-                textAlign: "center",
-                padding: { xs: 1, sm: 2 },
-              }}
-            >
-              {currentQuestion?.questionText}
+        {currentQuestion && (
+          <>
+            <Typography variant="h6" sx={{ mb: 4, color: "var(--text-color)" }}>
+              {currentQuestion.questionText}
             </Typography>
 
-            {/* Opções de resposta */}
             <FormControl component="fieldset" sx={{ width: "100%" }}>
               <RadioGroup
-                value={currentQuestion?.userAnswer?.toString() || ""}
-                onChange={handleAnswerChange}
+                value={currentAnswer?.selectedOptionId ?? ""}
+                onChange={(e) =>
+                  handleAnswer(currentQuestion.id, Number(e.target.value))
+                }
               >
-                {currentQuestion?.options.map((option, index) => (
+                {currentQuestion.options.map((option) => (
                   <FormControlLabel
-                    key={index}
-                    value={index.toString()}
+                    key={option.id}
+                    value={option.id}
                     control={<Radio />}
-                    label={
-                      <Box
-                        sx={{
-                          wordWrap: "break-word",
-                          overflow: "auto",
-                          textOverflow: "ellipsis",
-                          width: "100%",
-                          maxHeight: "4rem",
-                          "&::-webkit-scrollbar": {
-                            width: "6px",
-                            height: "6px",
-                          },
-                          "&::-webkit-scrollbar-thumb": {
-                            backgroundColor: "rgba(0, 0, 0, 0.2)",
-                            borderRadius: "3px",
-                          },
-                          "&::-webkit-scrollbar-thumb:hover": {
-                            backgroundColor: "rgba(0, 0, 0, 0.3)",
-                          },
-                          "&::-webkit-scrollbar-track": {
-                            backgroundColor: "rgba(0, 0, 0, 0.1)",
-                            borderRadius: "3px",
-                          },
-                        }}
-                      >
-                        {option}
-                      </Box>
-                    }
-                    disabled={submitting}
+                    label={option.text}
                     sx={{
                       mb: 2,
                       p: 2,
                       borderRadius: 2,
+                      width: "100%",
+                      backgroundColor: "var(--light-blue-color)",
                       transition: "all 0.2s ease-in-out",
-                      "&:hover": {
-                        bgcolor: "var(--dark-blue-color)",
-                        transform: "scale(1.05)",
+                      "& .MuiRadio-root": {
+                        color: "var(--text-weak-color)",
                       },
-                      ...(currentQuestion?.userAnswer === index && {
-                        bgcolor: "var(--dark-blue-color)",
-                        borderColor: "var(--text-color)",
-                        color: "var(--text-color)",
-                        transform: "scale(1.05)",
+                      "& .Mui-checked": {
+                        color: "var(--primary-color)",
+                      },
+                      "&:hover": {
+                        backgroundColor: "var(--dark-blue-color)",
+                        transform: "translateY(-2px)",
+                      },
+                      ...(currentAnswer?.selectedOptionId === option.id && {
+                        backgroundColor: "var(--dark-blue-color)",
+                        transform: "translateY(-2px)",
                       }),
                     }}
                   />
                 ))}
               </RadioGroup>
             </FormControl>
-          </Box>
-        </Fade>
 
-        {/* Botões de navegação */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            mt: 4,
-            gap: 2,
-          }}
-        >
-          <Button
-            onClick={handleExit}
-            variant="outlined"
-            disabled={submitting}
-            sx={{
-              color: "var(--text-color)",
-              fontWeight: "bold",
-              bgcolor: "var(--error-color)",
-              "&:hover": {
-                borderColor: "var(--text-color)",
-                bgcolor: "var(--error-weaker-color)",
-              },
-            }}
-          >
-            Sair
-          </Button>
-          <Button
-            onClick={() =>
-              isLastQuestion ? submitQuizz() : handleNavigation("next")
-            }
-            variant="contained"
-            disabled={currentQuestion?.userAnswer === undefined || submitting}
-            sx={{
-              bgcolor: "var(--primary-color)",
-              color: "var(--text-color)",
-              fontWeight: "bold",
-              "&:hover": {
-                bgcolor: "var(--primary-weaker-color)",
-              },
-            }}
-          >
-            {submitting ? (
-              <CircularProgress size={24} sx={{ color: "var(--text-color)" }} />
-            ) : isLastQuestion ? (
-              "Finalizar"
-            ) : (
-              "Próxima"
-            )}
-          </Button>
-        </Box>
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}
+            >
+              <Button
+                onClick={() => handleNavigation("prev")}
+                disabled={currentQuestionIndex === 0 || submitting}
+                sx={{
+                  color: "var(--text-color)",
+                  "&.Mui-disabled": {
+                    color: "var(--text-weak-color)",
+                  },
+                }}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() =>
+                  isLastQuestion ? handleSubmit() : handleNavigation("next")
+                }
+                disabled={!currentAnswer || submitting}
+                sx={{
+                  bgcolor: "var(--primary-color)",
+                  "&:hover": { bgcolor: "var(--primary-weaker-color)" },
+                  "&.Mui-disabled": {
+                    bgcolor: "var(--disabled-color)",
+                  },
+                }}
+              >
+                {isLastQuestion ? "Submit" : "Next"}
+              </Button>
+            </Box>
+          </>
+        )}
       </Box>
-    </Box>
+    </Fade>
   );
 };
 

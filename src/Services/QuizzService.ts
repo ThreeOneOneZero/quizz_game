@@ -1,4 +1,3 @@
-import { mockQuizzes } from "../data/quizzes";
 import { Quizz } from "../models/Quizz";
 import apiClient from "../Utils/api";
 import UserService from "./UserService";
@@ -10,10 +9,10 @@ class QuizzService {
     return this.quizzes;
   }
 
-  getAllQuizzes(): Quizz[] {
+  getAllQuizzes(): Quizz[] | null {
     // To do: Get all quizzes from the server
 
-    return mockQuizzes;
+    return null;
   }
 
   async getQuizzesByCreator(authorId: number): Promise<Quizz[] | null> {
@@ -45,5 +44,5 @@ class QuizzService {
     this.quizzes = quizzes;
   }
 }
-
-export default new QuizzService();
+const quizzServiceInstance = new QuizzService();
+export default quizzServiceInstance;

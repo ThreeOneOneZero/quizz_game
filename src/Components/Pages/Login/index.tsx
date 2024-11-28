@@ -1,126 +1,138 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Button,
   Typography,
   Box,
   TextField,
-  Skeleton,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
-import { PhotoAndTitleSkeleton } from "../../Loading/Skeleton/PhotoTitleSkeleton";
-import useToast from "../../../hooks";
+import useToast from "../../../hooks/toast";
 import AuthService from "../../../Services/AuthService";
+import { Role } from "../../../types/Role";
 import { useNavigate } from "react-router-dom";
-import { localLogin } from "../../../Utils/localAuth_toDelete/localAuth";
-import FieldsSkeleton from "../../Loading/Skeleton/FieldsSkeleton";
 
 const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const showToast = useToast();
   // states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingSkeleton, setLoadingSkeleton] = useState(true);
-  const showToast = useToast();
-  const navigate = useNavigate();
 
-  // methods
-  const handleLogin = async () => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState("");
+  const [role, setRole] = useState<Role>(Role.Student);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setLoading(true);
-    const response = await AuthService.login(email, password);
-    setLoading(false);
-    if (response) {
-      showToast("Login successful!", "success");
-      navigate("/menu");
-    } else {
-      const localSuccess = localLogin(email, password);
-      if (localSuccess) {
-        showToast("Login successful!", "success");
+    try {
+      const success = await AuthService.login(email, password);
+      if (success) {
         navigate("/menu");
       } else {
-        showToast("User not found!", "error");
+        showToast("Login falhou. Verifique suas credenciais.", "error");
       }
+    } catch (error) {
+      console.error(error);
+      showToast("Ocorreu um erro. Tente novamente.", "error");
     }
+    setLoading(false);
   };
 
-  // useEffect
-  useEffect(() => {
-    if (AuthService.isAuthenticated()) {
-      navigate("/menu");
+  const handleRegisterSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      const success = await AuthService.register(email, password, name, role);
+      if (success) {
+        setIsLogin(true);
+        showToast(
+          "Registro realizado com sucesso! Faça login para continuar.",
+          "success"
+        );
+      } else {
+        showToast("Registro falhou. Tente novamente.", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Ocorreu um erro. Tente novamente.", "error");
     }
-  }, [navigate]);
-
-  useEffect(() => {
-    setTimeout(() => {
-      setLoadingSkeleton(false);
-    }, 2000);
-  }, []);
+    setLoading(false);
+  };
 
   return (
     <Box
+      component="form"
       display="flex"
       flexDirection="column"
       alignItems="center"
       justifyContent="center"
       width="100%"
+      onSubmit={isLogin ? handleSubmit : handleRegisterSubmit}
     >
-      {loadingSkeleton ? (
-        <Box
-          display="flex"
-          flexDirection="column"
-          width="100%"
-          height="100%"
-          paddingLeft={16}
-          paddingRight={16}
-          alignItems="center"
-          justifyContent="center"
+      <>
+        <Typography
+          variant="h4"
+          component="h1"
+          gutterBottom
+          fontWeight={"bold"}
+          color={"var(--text-color)"}
         >
-          <PhotoAndTitleSkeleton />
-          <FieldsSkeleton fields={4} />
-          <Skeleton width="100%" height={60} sx={{ marginBottom: 0 }} />
-          <Box
-            sx={{
-              display: "flex",
-              width: "100%",
-              marginTop: 4,
-              justifyContent: "space-between",
-            }}
-          >
-            <Skeleton width="40%" height={80} />
-            <Skeleton width="40%" height={80} />
-          </Box>
-        </Box>
-      ) : (
-        <>
-          <Typography
-            variant="h4"
-            component="h1"
-            gutterBottom
-            fontWeight={"bold"}
-            color={"var(--text-color)"}
-          >
-            Login
-          </Typography>
+          {isLogin ? "Login" : "Registro"}
+        </Typography>
+        {!isLogin && (
           <TextField
-            label="Email"
-            type="email || number"
+            label="Nome"
+            type="text"
             required
             fullWidth
-            value={email}
+            value={name}
             disabled={loading}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             sx={{ marginTop: 2 }}
           />
-          <TextField
-            label="Password"
-            type="password"
-            required
-            fullWidth
-            value={password}
-            disabled={loading}
-            onChange={(e) => setPassword(e.target.value)}
-            sx={{ marginTop: 2 }}
-          />
-
+        )}
+        <TextField
+          label="Email"
+          type="email"
+          required
+          fullWidth
+          value={email}
+          disabled={loading}
+          onChange={(e) => setEmail(e.target.value)}
+          sx={{ marginTop: 2 }}
+        />
+        <TextField
+          label="Password"
+          type="password"
+          required
+          fullWidth
+          value={password}
+          disabled={loading}
+          onChange={(e) => setPassword(e.target.value)}
+          sx={{ marginTop: 2 }}
+        />
+        {!isLogin && (
+          <FormControl fullWidth sx={{ marginTop: 2 }}>
+            <InputLabel id="role-label">Tipo de Usuário</InputLabel>
+            <Select
+              labelId="role-label"
+              value={role}
+              label="Tipo de Usuário"
+              onChange={(e) => setRole(e.target.value as Role)}
+              disabled={loading}
+            >
+              <MenuItem value={Role.Student}>Estudante</MenuItem>
+              <MenuItem value={Role.Professor}>Professor</MenuItem>
+            </Select>
+          </FormControl>
+        )}
+        {isLogin && (
           <Typography
             variant="body2"
             color="textSecondary"
@@ -129,23 +141,41 @@ const LoginPage: React.FC = () => {
           >
             Esqueceu a senha?
           </Typography>
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            onClick={handleLogin}
-            disabled={loading}
-            sx={{
-              background: "var(--primary-color)",
-              marginTop: 2,
-              ":hover": { background: "var(--primary-weaker-color)" },
-            }}
-            startIcon={loading ? <CircularProgress size={20} /> : null}
-          >
-            {loading ? "Loading..." : "Entrar"}
-          </Button>
-        </>
-      )}
+        )}
+        <Button
+          type="button"
+          variant="text"
+          fullWidth
+          onClick={() => setIsLogin(!isLogin)}
+          disabled={loading}
+          sx={{
+            marginTop: 2,
+            fontWeight: "bold",
+            bgcolor: "transparent",
+            color: "var(--text-color)",
+            ":hover": { color: "var(--text-color)" },
+          }}
+        >
+          {isLogin
+            ? "Não tem uma conta? Registre-se"
+            : "Já tem uma conta? Faça login"}
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          disabled={loading}
+          sx={{
+            background: "var(--primary-color)",
+            marginTop: 2,
+            fontWeight: "bold",
+            ":hover": { background: "var(--primary-weaker-color)" },
+          }}
+          startIcon={loading ? <CircularProgress size={20} /> : null}
+        >
+          {loading ? "Loading..." : isLogin ? "Entrar" : "Registrar"}
+        </Button>
+      </>
     </Box>
   );
 };

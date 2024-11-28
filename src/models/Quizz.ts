@@ -1,5 +1,5 @@
 import { QuizzDificulty } from "../types/Dificulty";
-import { Question } from "./Question";
+import { Question, QuestionRequest } from "./Question";
 
 export interface Quizz {
   id: number;
@@ -7,4 +7,11 @@ export interface Quizz {
   authorId: number;
   difficulty: QuizzDificulty;
   questions: Question[];
+}
+export interface CreateQuizz {
+  id: number;
+  title: string;
+  authorId: number;
+  difficulty: QuizzDificulty;
+  questions: QuestionRequest[];
 }

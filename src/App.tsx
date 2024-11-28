@@ -1,6 +1,6 @@
-import React from 'react';
-import './App.css';
-import { Routes } from './Routes';
+import React from "react";
+import "./App.css";
+import { Routes } from "./Routes";
 
 const App = () => {
   const [ready, setReady] = React.useState(false);
@@ -10,7 +10,22 @@ const App = () => {
   }, []);
 
   if (!ready) {
-    return <p>Carregando...</p>;
+    return (
+      <p
+        style={{
+          width: "100%",
+          height: "100vh",
+          display: "flex",
+          color: "white",
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: 0,
+          marginBottom: 0,
+        }}
+      >
+        Carregando...
+      </p>
+    );
   }
 
   return <Routes />;
